@@ -1,15 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Otros permisos y configuraciones -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
-    <!-- Opcional: si necesitas verificar el estado de la red -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Permiso para acceder a internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Permisos para acceder a la ubicación -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Permiso para acceder a la ubicación en segundo plano (solo si es necesario) -->
+    <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> -->
+
 
     <application
-        android:label="myapp"
-        android:name="${applicationName}"
+        android:label="TxemaWeather"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
