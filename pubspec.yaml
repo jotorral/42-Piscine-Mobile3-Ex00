@@ -103,5 +103,5 @@ flutter:
 flutter_icons:
   android: true
   ios: false
-  image_path: "assets/images/weather.png"  # Ruta de la imagen del icono de tu aplicación
+  image_path: "assets/images/weather_icon.png"  # Ruta de la imagen del icono de tu aplicación
   min_sdk_android: 29                 # Opcional, versión mínima para Android (opcional)
