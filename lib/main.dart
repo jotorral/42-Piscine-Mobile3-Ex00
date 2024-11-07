@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart'; // GPS
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
@@ -53,7 +54,7 @@ class _HomePageState extends State<_HomePage>
   String environementCurrently = '';
   String windSpeedCurrently = '';
   String selectedCity = '';
-//  String selectedAdmin = '';
+  String selectedAdmin = '';
   String selectedAdmin1 = '';
   String selectedCountry = '';
   String address = '';
@@ -150,6 +151,13 @@ class _HomePageState extends State<_HomePage>
             'Lat: ${position.latitude}, Lon: ${position.longitude}';
         latitudeGPS = position.latitude;
         longitudeGPS = position.longitude;
+//        latitudeGPS = 43.37994;
+//        longitudeGPS = -2.96029;
+//        latitudeGPS = 42.34711875194457; // EN EL MEDIO DEL MAR
+//        longitudeGPS = -40.13449900094774; // EN EL MEDIO DEL MAR
+//          latitudeGPS = 40.761430;
+//          longitudeGPS = 73.977620;
+
         getCityNameFromCoordinates(latitudeGPS, longitudeGPS);
         showWeather = true;
       });
@@ -163,11 +171,12 @@ class _HomePageState extends State<_HomePage>
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/weather_background.jpg'),
+      decoration: BoxDecoration(
+        image: const DecorationImage(
+          image: AssetImage('assets/images/weather_background1.jpg'),
           fit: BoxFit.cover,
         ),
+				color: Colors.blue.withOpacity(0.1),
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -306,15 +315,20 @@ class _HomePageState extends State<_HomePage>
   Widget currentlyWeatherWidget() {
     return Column(children: [
       const SizedBox(height: 10.0),
-      Text(selectedCity /* + commaSpace + selectedAdmin*/,
+      Text(
+          selectedCity/* +
+              commaSpace +
+              latitudeGPS.toString() +
+              commaSpace +
+              longitudeGPS.toString() + selectedAdmin*/,
           style: const TextStyle(
               fontSize: 14, color: Color.fromRGBO(126, 229, 255, 1))),
       Text(
         selectedAdmin1 +
             commaSpace +
             selectedCountry /* +
-            latitudeGPS.toString() +
-            longitudeGPS.toString()*/
+						latitudeGPS.toString() +
+						longitudeGPS.toString()*/
         ,
         style: const TextStyle(fontSize: 14, color: Colors.white),
       ),
@@ -364,8 +378,8 @@ class _HomePageState extends State<_HomePage>
           selectedAdmin1 +
               commaSpace +
               selectedCountry /* +
-              latitudeGPS.toString() +
-              longitudeGPS.toString()*/
+							latitudeGPS.toString() +
+							longitudeGPS.toString()*/
           ,
           style: const TextStyle(fontSize: 14, color: Colors.white),
         ),
@@ -472,8 +486,8 @@ class _HomePageState extends State<_HomePage>
           selectedAdmin1 +
               commaSpace +
               selectedCountry /* +
-              latitudeGPS.toString() +
-              longitudeGPS.toString()*/
+							latitudeGPS.toString() +
+							longitudeGPS.toString()*/
           ,
           style: const TextStyle(fontSize: 14, color: Colors.white),
         ),
@@ -658,45 +672,93 @@ class _HomePageState extends State<_HomePage>
 
   Future<void> getCityNameFromCoordinates(
       double latitudeGPS, double longitudeGPS) async {
-    String latitudeGPS1 = latitudeGPS.toString();
-    String longitudeGPS1 = longitudeGPS.toString();
+//    String latitudeGPS1 = latitudeGPS.toString();
+//    String longitudeGPS1 = longitudeGPS.toString();
     selectedCity = '';
 //    selectedAdmin = '';
     selectedAdmin1 = '';
     selectedCountry = '';
 
-    final urlCity =
-        'https://nominatim.openstreetmap.org/reverse?lat=$latitudeGPS1&lon=$longitudeGPS1&format=json';
+    try {
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(latitudeGPS, longitudeGPS);
+      Placemark? firstValidPlacemark;
+    for (var placemark in placemarks) {
+			if (placemark.locality != null && placemark.locality != '' &&
+					placemark.administrativeArea != null && placemark.administrativeArea != '' &&
+					placemark.country != null && placemark.country != '') {
+				firstValidPlacemark = placemark;
+				break; // Salir del bucle en cuanto encontremos el primer placemark válido
+			}
+		}
+//      firstValidPlacemark = null;
+      if (firstValidPlacemark != null) {
+        // Si encontramos un placemark válido, puedes acceder a los valores
+        selectedCity = firstValidPlacemark.locality ?? '';
+        selectedAdmin1 = firstValidPlacemark.administrativeArea ?? '';
+        selectedCountry = firstValidPlacemark.country ?? '';
+        selectedAdmin = firstValidPlacemark.subAdministrativeArea ?? '';
+      } else {
+        // Recorre los placemarks para obtener el primer valor no nulo de cada campo
+        for (var placemark in placemarks) {
+          if (selectedCity.isEmpty && placemark.locality != null && placemark.locality != '') {
+            selectedCity = placemark.locality!;
+          }
+          if (selectedAdmin1.isEmpty && placemark.administrativeArea != null && placemark.administrativeArea != '') {
+            selectedAdmin1 = placemark.administrativeArea!;
+          }
+          if (selectedCountry.isEmpty && placemark.country != null && placemark.country != '') {
+            selectedCountry = placemark.country!;
+          }
+
+          // Salir del bucle si todos los campos ya tienen un valor
+          if (selectedCity.isNotEmpty &&
+              selectedAdmin1.isNotEmpty &&
+              selectedCountry.isNotEmpty) {
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      selectedCity = 'CITY NOT';
+      selectedAdmin1 = 'FOUND HERE';
+      selectedCountry = '';
+    }
+    await getWeatherFromCoordinates(latitudeGPS, longitudeGPS);
+
+/*
+		final urlCity =
+				'https://nominatim.openstreetmap.org/reverse?lat=$latitudeGPS1&lon=$longitudeGPS1&format=json';
 //        'https://geocoding-api.open-meteo.com/v1/reverse?latitude=$latitudeGPS1&longitude=$longitudeGPS1';
 
-    final headers = {
-      'Accept': 'application/json',
-      'User-Agent': 'MyApp/1.0',
-      'Connection': 'Keep-Alive',
-    };
+		final headers = {
+			'Accept': 'application/json',
+			'User-Agent': 'MyApp/1.138',
+			'Connection': 'Keep-Alive',
+		};
 
-    final http.Response responseCity =
-        await http.get(Uri.parse(urlCity), headers: headers);
+		final http.Response responseCity =
+				await http.get(Uri.parse(urlCity), headers: headers);
 
-    debugPrint(
-        '*************** City found3 ************** ${responseCity.statusCode.toString()}\n');
-    if (responseCity.statusCode == 200) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        final dataCity = jsonDecode(responseCity.body);
-        selectedCity = dataCity['address']['city'];
-        selectedAdmin1 = dataCity['address']['state'];
-        selectedCountry = dataCity['address']['country'];
-        address = dataCity['address']['city'] +
-            '\n' +
-            dataCity['address']['state'] +
-            '\n' +
-            dataCity['address']['country'];
-      });
-      await getWeatherFromCoordinates(latitudeGPS, longitudeGPS);
-    } else {
-      await getWeatherFromCoordinates(latitudeGPS, longitudeGPS);
-      setState(() {});
-    }
+		debugPrint(
+				'*************** City found3 ************** ${responseCity.statusCode.toString()}\n');
+		if (responseCity.statusCode == 200) {
+			final dataCity = jsonDecode(responseCity.body);
+			selectedCity = dataCity['address']['city'];
+			selectedAdmin1 = dataCity['address']['state'];
+			selectedCountry = dataCity['address']['country'];
+			address = dataCity['address']['city'] +
+					'\n' +
+					dataCity['address']['state'] +
+					'\n' +
+					dataCity['address']['country'];
+
+			await getWeatherFromCoordinates(latitudeGPS, longitudeGPS);
+		} else {
+			await getWeatherFromCoordinates(latitudeGPS, longitudeGPS);
+			setState(() {});
+		}
+		*/
   }
 
   Future<void> getCoordinatesFromCityName(index) async {
